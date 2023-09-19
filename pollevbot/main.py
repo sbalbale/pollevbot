@@ -1,13 +1,14 @@
-from pollevbot import PollBot
+from pollbot import PollBot
 
 
 def main():
-    user = 'My Username'
-    password = 'My Password'
-    host = 'PollEverywhere URL Extension e.g. "uwpsych"'
+    user = 'balbale.s'
+    password = '41HillcrestRoad!'
+    host = 'vasilikilyko643'
 
-    # If you're using a non-uw PollEv account,
+    # If you're using a non-neu PollEv account,
     # add the argument "login_type='pollev'"
+    login_type = 'neu'
     with PollBot(user, password, host) as bot:
         bot.run()
 

@@ -2,7 +2,7 @@ import requests
 import logging
 import time
 from typing import Optional
-from .endpoints import endpoints
+from endpoints import endpoints
 
 logger = logging.getLogger(__name__)
 __all__ = ['PollBot']
@@ -18,14 +18,14 @@ class PollBot:
 
     Usage:
     >>> bot = PollBot(user='username', password='password',
-    ...               host='host', login_type='uw')
+    ...               host='host', login_type='neu')
     >>> bot.run()
 
     Can also be used as a context manager.
     """
 
     def __init__(self, user: str, password: str, host: str,
-                 login_type: str = 'uw', min_option: int = 0,
+                 login_type: str = 'neu', min_option: int = 0,
                  max_option: int = None, closed_wait: float = 5,
                  open_wait: float = 5, lifetime: float = float('inf')):
         """
@@ -33,9 +33,9 @@ class PollBot:
 
         :param user: PollEv account username.
         :param password: PollEv account password.
-        :param host: PollEv host name, i.e. 'uwpsych'
-        :param login_type: Login protocol to use (either 'uw' or 'pollev').
-                        If 'uw', uses MyUW (SAML2 SSO) to authenticate.
+        :param host: PollEv host name, i.e. 'neupsych'
+        :param login_type: Login protocol to use (either 'neu' or 'pollev').
+                        If 'neu', uses MyNortheastern (SAML2 SSO) to authenticate.
                         If 'pollev', uses pollev.com.
         :param min_option: Minimum index (0-indexed) of option to select (inclusive).
         :param max_option: Maximum index (0-indexed) of option to select (exclusive).
@@ -45,14 +45,14 @@ class PollBot:
                         before answering.
         :param lifetime: Lifetime of this PollBot (in seconds).
                         If float('inf'), runs forever.
-        :raises ValueError: if login_type is not 'uw' or 'pollev'.
+        :raises ValueError: if login_type is not 'neu' or 'pollev'.
         """
-        if login_type not in {'uw', 'pollev'}:
+        if login_type not in {'neu', 'pollev'}:
             raise ValueError(f"'{login_type}' is not a supported login type. "
-                             f"Use 'uw' or 'pollev'.")
-        if login_type == 'pollev' and user.strip().lower().endswith('@uw.edu'):
-            logger.warning(f"{user} looks like a UW email. "
-                           f"Use login_type='uw' to log in with MyUW.")
+                             f"Use 'neu' or 'pollev'.")
+        if login_type == 'pollev' and user.strip().lower().endswith('@northeastern.edu'):
+            logger.warning(f"{user} looks like a northeastern email. "
+                           f"Use login_type='neu' to log in with MyNortheastern.")
 
         self.user = user
         self.password = password
@@ -105,22 +105,22 @@ class PollBot:
         # If login is successful, PollEv sends an empty HTTP response.
         return not r.text
 
-    def _uw_login(self):
+    def _neu_login(self):
         """
-        Logs into PollEv through MyUW.
+        Logs into PollEv through MyNortheastern.
         Returns True on success, False otherwise.
         """
         import bs4 as bs
         import re
 
-        logger.info("Logging into PollEv through MyUW.")
+        logger.info("Logging into PollEv through MyNortheastern.")
 
-        r = self.session.get(endpoints['uw_saml'])
+        r = self.session.get(endpoints['neu_saml'])
         soup = bs.BeautifulSoup(r.text, "html.parser")
         data = soup.find('form', id='idplogindiv')['action']
         session_id = re.findall(r'jsessionid=(.*)\.', data)
 
-        r = self.session.post(endpoints['uw_login'].format(id=session_id),
+        r = self.session.post(endpoints['neu_login'].format(id=session_id),
                               data={
                                   'j_username': self.user,
                                   'j_password': self.password,
@@ -129,14 +129,14 @@ class PollBot:
         soup = bs.BeautifulSoup(r.text, "html.parser")
         saml_response = soup.find('input', type='hidden')
 
-        # When user authentication fails, UW will send an empty SAML response.
+        # When user authentication fails, neu will send an empty SAML response.
         if not saml_response:
             return False
 
-        r = self.session.post(endpoints['uw_callback'],
+        r = self.session.post(endpoints['neu_callback'],
                               data={'SAMLResponse': saml_response['value']})
         auth_token = re.findall('pe_auth_token=(.*)', r.url)[0]
-        self.session.post(endpoints['uw_auth_token'],
+        self.session.post(endpoints['neu_auth_token'],
                           headers={'x-csrf-token': self._get_csrf_token()},
                           data={'token': auth_token})
         return True
@@ -147,8 +147,8 @@ class PollBot:
 
         :raises LoginError: if login failed.
         """
-        if self.login_type.lower() == 'uw':
-            success = self._uw_login()
+        if self.login_type.lower() == 'neu':
+            success = self._neu_login()
         else:
             success = self._pollev_login()
         if not success:
@@ -158,7 +158,7 @@ class PollBot:
     def get_firehose_token(self) -> str:
         """
         Given that the user is logged in, retrieve an AWS firehose token.
-        If the poll host is not affiliated with UW, PollEv will return
+        If the poll host is not affiliated with neu, PollEv will return
         a firehose token with a null value.
 
         :raises ValueError: if the specified poll host is not found.

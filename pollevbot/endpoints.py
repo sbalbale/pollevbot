@@ -1,13 +1,13 @@
 endpoints = {
     'home': 'https://pollev.com/{host}',
 
-    # MyUW Login
-    'uw_login': 'https://idp.u.washington.edu/idp/profile/SAML2/'
+    # MyNortheastern Login
+    'neu_login': 'https://neuidmsso.neu.edu/idp/profile/SAML2/'
                 'Redirect/SSO;jsessionid={id}.idp03?execution=e1s1',
-    'uw_saml': 'https://www.polleverywhere.com/auth/washington?'
+    'neu_saml': 'https://www.polleverywhere.com/auth/northeastern?'
                'redirect=https%3A%2F%2Fpollev.com%2F&token_required=false',
-    'uw_callback': 'https://www.polleverywhere.com/auth/washington/callback',
-    'uw_auth_token': 'https://pollev.com/proxy/api/participant_auth_token',
+    'neu_callback': 'https://www.polleverywhere.com/auth/northeastern/callback',
+    'neu_auth_token': 'https://pollev.com/proxy/api/participant_auth_token',
 
     # General Login
     'login': 'https://pollev.com/proxy/api/sessions',
