@@ -1,15 +1,18 @@
 from pollbot import PollBot
 from dotenv import load_dotenv
-load_dotenv()
 import os
+from pathlib import Path  # python3 only
 
+env_path = Path('.') / '.env'
+load_dotenv(dotenv_path=env_path)
+usrName = os.getenv('USER')
+passwrd = os.getenv('PASSWORD')
+pollHost = os.getenv('HOST')
 
+# print(usrName + ", " + passwrd + ", " + pollHost)
 
 
 def main():
-    usrName = os.getenv('USER')
-    passwrd = os.getenv('PASSWORD')
-    pollHost = os.getenv('HOST')
     user = usrName
     password = passwrd
     host = pollHost

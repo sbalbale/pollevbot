@@ -112,24 +112,67 @@ class PollBot:
         """
         import bs4 as bs
         import re
-
+        from selenium import webdriver
+        from selenium.webdriver.common.keys import Keys
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.common.by import By
+        from selenium.common.exceptions import TimeoutException
+        
         logger.info("Logging into PollEv through MyNortheastern.")
 
-        r = self.session.get(endpoints['neu_saml'])
-        soup = bs.BeautifulSoup(r.text, "html.parser")
-        data = soup.find('form', id='idplogindiv')['action']
-        session_id = re.findall(r'jsessionid=(.*)\.', data)
-
-        r = self.session.post(endpoints['neu_login'].format(id=session_id),
-                              data={
-                                  'j_username': self.user,
-                                  'j_password': self.password,
-                                  '_eventId_proceed': 'Sign in'
-                              })
-        soup = bs.BeautifulSoup(r.text, "html.parser")
+        url = endpoints['neu_saml']
+                # create a new Firefox session
+        driver = webdriver.Firefox()
+        driver.get(url)
+        
+        
+        # signin to neu page
+        driver.implicitly_wait(30)
+        username = driver.find_element(By.ID, "username")
+        password = driver.find_element(By.ID, "password")
+        username.send_keys(self.user)
+        password.send_keys(self.password)
+        driver.find_element(By.NAME, "_eventId_proceed").click()
+        
+        #get around 2fa
+        try:
+            driver.implicitly_wait(30)
+            # element_present = WebDriverWait(driver, 120).until(EC.presence_of_element_located((By.XPATH, '/html/body/div/div/div[1]/div/form/div[1]/fieldset[1]/div[1]/button')))
+            WebDriverWait(driver, 20).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH,"//iframe[@id='duo_iframe']")))
+            WebDriverWait(driver, 20).until(EC.element_to_be_clickable((By.XPATH, "//button[normalize-space()='Send Me a Push']"))).click()
+        except TimeoutException:
+            print("Timed out waiting for page to load")
+            print("login failed")
+        # Pass to BS4
+        page_source = driver.page_source
+        soup=bs(page_source , 'html.parser')
+        
+        # r = self.session.get(endpoints['neu_saml'])
+        # print(endpoints['neu_saml'])
+        
+        # soup = bs.BeautifulSoup(r.text, "html.parser")
+        # print(soup)
+             
+        # data = soup.find('form')['action']
+        
+        # session_id = re.findall(r'jsessionid=(.*)\.', data)
+        
+        # r = self.session.post(endpoints['neu_login'].format(id=session_id),
+        #                       data={
+        #                           'j_username': self.user,
+        #                           'j_password': self.password,
+                                #   '_eventId_proceed': 'Sign in'
+                            #   })
+        # print(r)
+        
+        # soup = bs.BeautifulSoup(r.text, "html.parser")
+        # # print(soup)
+        
         saml_response = soup.find('input', type='hidden')
 
-        # When user authentication fails, neu will send an empty SAML response.
+        # # When user authentication fails, neu will send an empty SAML response.
         if not saml_response:
             return False
 
